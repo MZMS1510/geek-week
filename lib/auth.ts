@@ -23,13 +23,12 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string;
-    role: Role;
-    qrToken: string;
-  }
-}
+type AppToken = {
+  id?: string;
+  role?: Role;
+  qrToken?: string;
+  [key: string]: unknown;
+};
 
 const baseAdapter = PrismaAdapter(prisma);
 
@@ -62,6 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async jwt({ token, user }) {
+      const t = token as AppToken;
       // `user` is only present on the first call after sign-in.
       if (user?.id) {
         const dbUser = await prisma.user.findUnique({
@@ -69,30 +69,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           select: { id: true, role: true, qrToken: true },
         });
         if (dbUser) {
-          token.id = dbUser.id;
-          token.role = dbUser.role;
-          token.qrToken = dbUser.qrToken;
+          t.id = dbUser.id;
+          t.role = dbUser.role;
+          t.qrToken = dbUser.qrToken;
         }
-        return token;
+        return t;
       }
       // Refresh role/qrToken from DB on each request (cheap, supports promotion mid-session).
-      if (token.id) {
+      if (t.id) {
         const fresh = await prisma.user.findUnique({
-          where: { id: token.id },
+          where: { id: t.id },
           select: { role: true, qrToken: true },
         });
         if (fresh) {
-          token.role = fresh.role;
-          token.qrToken = fresh.qrToken;
+          t.role = fresh.role;
+          t.qrToken = fresh.qrToken;
         }
       }
-      return token;
+      return t;
     },
     async session({ session, token }) {
-      if (token.id) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.qrToken = token.qrToken;
+      const t = token as AppToken;
+      if (t.id && t.role && t.qrToken) {
+        session.user.id = t.id;
+        session.user.role = t.role;
+        session.user.qrToken = t.qrToken;
       }
       return session;
     },
