@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 6%;
+    --foreground: 0 0% 98%;
+    --card: 240 8% 10%;
+    --card-foreground: 0 0% 98%;
+    --primary: 280 90% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 180 75% 45%;
+    --secondary-foreground: 240 10% 6%;
+    --muted: 240 6% 16%;
+    --muted-foreground: 240 5% 70%;
+    --accent: 280 90% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 80% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 20%;
+    --input: 240 6% 18%;
+    --ring: 280 90% 65%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    min-height: 100dvh;
+  }
+}
