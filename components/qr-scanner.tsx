@@ -53,7 +53,13 @@ export function QrScanner() {
       if (s) {
         s.stop()
           .catch(() => {})
-          .then(() => s.clear().catch(() => {}));
+          .finally(() => {
+            try {
+              s.clear();
+            } catch {
+              // ignore
+            }
+          });
       }
     };
   }, [router]);

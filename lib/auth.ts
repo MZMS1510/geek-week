@@ -1,4 +1,5 @@
 import NextAuth, { type DefaultSession } from "next-auth";
+import type { Adapter, AdapterUser } from "next-auth/adapters";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Role } from "@prisma/client";
 import { prisma } from "./prisma";
@@ -30,9 +31,33 @@ declare module "next-auth/jwt" {
   }
 }
 
+const baseAdapter = PrismaAdapter(prisma);
+
+const adapter: Adapter = {
+  ...baseAdapter,
+  // Override createUser so we can satisfy the required `qrToken` column
+  // (Prisma's default adapter doesn't know about our custom fields) and
+  // auto-promote known admins.
+  async createUser(data) {
+    const email = (data.email ?? "").toLowerCase();
+    const role: Role = ADMIN_EMAILS.has(email) ? "ADMIN" : "PARTICIPANT";
+    const created = await prisma.user.create({
+      data: {
+        email: data.email,
+        name: data.name,
+        image: data.image,
+        emailVerified: data.emailVerified,
+        qrToken: generateQrToken(),
+        role,
+      },
+    });
+    return created as unknown as AdapterUser;
+  },
+};
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
+  adapter,
   session: { strategy: "jwt" },
   callbacks: {
     ...authConfig.callbacks,
@@ -70,19 +95,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.qrToken = token.qrToken;
       }
       return session;
-    },
-  },
-  events: {
-    async createUser({ user }) {
-      const email = (user.email ?? "").toLowerCase();
-      const isAdmin = ADMIN_EMAILS.has(email);
-      await prisma.user.update({
-        where: { id: user.id! },
-        data: {
-          qrToken: generateQrToken(),
-          role: isAdmin ? "ADMIN" : "PARTICIPANT",
-        },
-      });
     },
   },
 });
