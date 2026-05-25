@@ -9,6 +9,22 @@ type ScannerInstance = InstanceType<Html5QrcodeModule["Html5Qrcode"]>;
 
 const ELEMENT_ID = "qr-scanner-region";
 const TOKEN_RE = /^[A-Z2-9]{10}$/;
+const SCANNING_STATE = 2; // Html5QrcodeScannerState.SCANNING
+
+async function safeStop(scanner: ScannerInstance) {
+  try {
+    if (scanner.getState() === SCANNING_STATE) {
+      await scanner.stop();
+    }
+  } catch {
+    // already stopped or never started
+  }
+  try {
+    scanner.clear();
+  } catch {
+    // ignore
+  }
+}
 
 export function QrScanner() {
   const router = useRouter();
@@ -30,12 +46,14 @@ export function QrScanner() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
           (decoded) => {
-            const value = decoded.trim().toUpperCase();
             if (handledRef.current) return;
+            const value = decoded.trim().toUpperCase();
             if (!TOKEN_RE.test(value)) return;
             handledRef.current = true;
-            scanner.stop().catch(() => {});
-            router.push(`/staff/award/${value}`);
+            // Stop the camera before navigating so the next page doesn't fight for the device.
+            safeStop(scanner).finally(() => {
+              router.push(`/staff/award/${value}`);
+            });
           },
           () => {}
         );
@@ -50,17 +68,7 @@ export function QrScanner() {
     return () => {
       cancelled = true;
       const s = scannerRef.current;
-      if (s) {
-        s.stop()
-          .catch(() => {})
-          .finally(() => {
-            try {
-              s.clear();
-            } catch {
-              // ignore
-            }
-          });
-      }
+      if (s) void safeStop(s);
     };
   }, [router]);
 
@@ -77,11 +85,7 @@ export function QrScanner() {
           {running ? "Point the camera at the participant's QR code." : "Starting camera…"}
         </div>
       )}
-      <Button
-        variant="outline"
-        onClick={() => router.back()}
-        className="w-full"
-      >
+      <Button variant="outline" onClick={() => router.back()} className="w-full">
         Cancel
       </Button>
     </div>
