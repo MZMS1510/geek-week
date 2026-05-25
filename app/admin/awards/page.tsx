@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatRelative } from "@/lib/utils";
+import { deleteAwardAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -57,9 +58,22 @@ export default async function AwardsPage({
                 </div>
                 {a.note && <div className="mt-1 text-xs italic text-muted-foreground">"{a.note}"</div>}
               </div>
-              <Badge variant={a.points >= 0 ? "success" : "warn"} className="shrink-0">
-                {a.points >= 0 ? "+" : ""}{a.points}
-              </Badge>
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge variant={a.points >= 0 ? "success" : "warn"}>
+                  {a.points >= 0 ? "+" : ""}{a.points}
+                </Badge>
+                <form action={deleteAwardAction}>
+                  <input type="hidden" name="id" value={a.id} />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="destructive"
+                    title="Remover esta atribuição"
+                  >
+                    Remover
+                  </Button>
+                </form>
+              </div>
             </div>
           ))}
           {awards.length === 0 && (
