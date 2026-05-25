@@ -8,9 +8,7 @@ import { requireRole } from "@/lib/authz";
 
 const schema = z.object({
   token: z.string().regex(/^[A-Z2-9]{10}$/),
-  activationId: z.string().min(1).optional(),
-  points: z.coerce.number().int().min(-1000).max(1000),
-  note: z.string().max(280).optional(),
+  activationId: z.string().min(1),
 });
 
 export async function awardPointsAction(formData: FormData) {
@@ -18,9 +16,7 @@ export async function awardPointsAction(formData: FormData) {
 
   const raw = {
     token: String(formData.get("token") ?? "").toUpperCase(),
-    activationId: (formData.get("activationId") as string) || undefined,
-    points: formData.get("points"),
-    note: (formData.get("note") as string) || undefined,
+    activationId: (formData.get("activationId") as string) || "",
   };
 
   const parsed = schema.safeParse(raw);
@@ -28,9 +24,6 @@ export async function awardPointsAction(formData: FormData) {
     redirect(`/staff/award/${raw.token}?error=invalid`);
   }
   const data = parsed.data;
-  if (data.points === 0) {
-    redirect(`/staff/award/${data.token}?error=zero`);
-  }
 
   const participant = await prisma.user.findUnique({
     where: { qrToken: data.token },
@@ -38,22 +31,20 @@ export async function awardPointsAction(formData: FormData) {
   });
   if (!participant) redirect(`/staff/award/${data.token}?error=notfound`);
 
-  let activationId: string | undefined;
-  if (data.activationId) {
-    const act = await prisma.activation.findUnique({
-      where: { id: data.activationId },
-      select: { id: true, isActive: true },
-    });
-    if (act?.isActive) activationId = act.id;
+  const activation = await prisma.activation.findUnique({
+    where: { id: data.activationId },
+    select: { id: true, isActive: true, defaultPoints: true },
+  });
+  if (!activation?.isActive) {
+    redirect(`/staff/award/${data.token}?error=invalid`);
   }
 
   await prisma.pointAward.create({
     data: {
       participantId: participant.id,
       awarderId: session.user.id,
-      activationId,
-      points: data.points,
-      note: data.note?.trim() || null,
+      activationId: activation.id,
+      points: activation.defaultPoints,
     },
   });
 

@@ -3,9 +3,7 @@
 import { useMemo, useState } from "react";
 import type { EventDay } from "@prisma/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 const DAY_LABEL: Record<EventDay, string> = {
   MONDAY: "Seg",
@@ -31,8 +29,6 @@ export function AwardForm({
   action: (formData: FormData) => void;
 }) {
   const [activationId, setActivationId] = useState<string>("");
-  const [points, setPoints] = useState<string>("");
-  const [note, setNote] = useState<string>("");
 
   const byDay = useMemo(() => {
     const map = new Map<EventDay, Activation[]>();
@@ -42,17 +38,6 @@ export function AwardForm({
     }
     return map;
   }, [activations]);
-
-  const selected = activations.find((a) => a.id === activationId);
-
-  const onPickActivation = (id: string) => {
-    setActivationId(id);
-    const a = activations.find((x) => x.id === id);
-    if (a) setPoints(String(a.defaultPoints));
-  };
-
-  const customPoints =
-    selected != null && points !== "" && Number(points) !== selected.defaultPoints;
 
   return (
     <form action={action} className="space-y-5">
@@ -75,7 +60,7 @@ export function AwardForm({
                     <button
                       key={a.id}
                       type="button"
-                      onClick={() => onPickActivation(a.id)}
+                      onClick={() => setActivationId(a.id)}
                       className={
                         "flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm " +
                         (activationId === a.id
@@ -94,49 +79,9 @@ export function AwardForm({
             );
           })}
         </div>
-        {activationId && (
-          <button
-            type="button"
-            onClick={() => {
-              setActivationId("");
-              setPoints("");
-            }}
-            className="text-xs text-muted-foreground underline"
-          >
-            Limpar seleção (pontos avulsos)
-          </button>
-        )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="points">
-          Pontos {customPoints && <span className="text-amber-400">(sobrescrito)</span>}
-        </Label>
-        <Input
-          id="points"
-          name="points"
-          type="number"
-          inputMode="numeric"
-          placeholder="ex: 50"
-          value={points}
-          onChange={(e) => setPoints(e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="note">Observação (opcional)</Label>
-        <Textarea
-          id="note"
-          name="note"
-          placeholder="ex: venceu jogo de luta no estande X"
-          value={note}
-          maxLength={280}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </div>
-
-      <Button type="submit" size="lg" className="w-full">
+      <Button type="submit" size="lg" className="w-full" disabled={!activationId}>
         Dar pontos
       </Button>
     </form>

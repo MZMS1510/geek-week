@@ -16,7 +16,9 @@ export async function Topbar() {
           <span className="font-semibold tracking-tight">Semana Geek</span>
         </Link>
         <div className="flex items-center gap-2">
-          {role && <Badge variant="secondary">{role.toLowerCase()}</Badge>}
+          {role && role !== "PARTICIPANT" && (
+            <Badge variant="secondary">{role.toLowerCase()}</Badge>
+          )}
           {session?.user ? (
             <form
               action={async () => {
@@ -25,12 +27,12 @@ export async function Topbar() {
               }}
             >
               <Button variant="ghost" size="sm" type="submit">
-                Sign out
+                Sair
               </Button>
             </form>
           ) : (
             <Button asChild size="sm" variant="ghost">
-              <Link href="/signin">Sign in</Link>
+              <Link href="/signin">Entrar</Link>
             </Button>
           )}
         </div>

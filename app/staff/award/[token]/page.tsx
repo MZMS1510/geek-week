@@ -85,9 +85,7 @@ export default async function AwardPage({
       <Card>
         <CardHeader>
           <CardTitle>Atribuir pontos</CardTitle>
-          <CardDescription>
-            Escolha uma ativação ou deixe em branco e digite pontos avulsos.
-          </CardDescription>
+          <CardDescription>Selecione uma ativação.</CardDescription>
         </CardHeader>
         <CardContent>
           <AwardForm
